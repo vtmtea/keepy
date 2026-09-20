@@ -5,19 +5,15 @@ on:
     branches:
       - master
 
-permissions:
-  contents: write
-
 jobs:
-  build-windows:
-    name: Test and package Windows app
-    runs-on: windows-latest
-
+  typecheck:
+    name: Typecheck
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
-      - name: Checkout master
+      - name: Checkout
         uses: actions/checkout@v7
-        with:
-          ref: master
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v6
@@ -37,13 +33,71 @@ jobs:
       - name: Typecheck
         run: pnpm run typecheck
 
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v6
+        with:
+          version: 10.12.4
+          run_install: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
       - name: Run tests
         run: pnpm test
+
+  package-windows:
+    name: Package Windows installer
+    needs: [typecheck, test]
+    runs-on: windows-latest
+    permissions:
+      contents: read
+    outputs:
+      version: ${{ steps.package-version.outputs.version }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v6
+        with:
+          version: 10.12.4
+          run_install: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
 
       - name: Build Windows installer
         run: pnpm run dist
 
-      - name: Upload Windows installer artifact
+      - name: Read package version
+        id: package-version
+        shell: pwsh
+        run: |
+          $package = Get-Content package.json | ConvertFrom-Json
+          "version=$($package.version)" >> $env:GITHUB_OUTPUT
+
+      - name: Upload Windows installer
         uses: actions/upload-artifact@v7
         with:
           name: keepy-windows
@@ -51,19 +105,25 @@ jobs:
           if-no-files-found: error
           retention-days: 14
 
-      - name: Read package version
-        id: package
-        shell: pwsh
-        run: |
-          $package = Get-Content package.json | ConvertFrom-Json
-          "version=$($package.version)" >> $env:GITHUB_OUTPUT
+  release:
+    name: Publish GitHub prerelease
+    needs: package-windows
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download Windows installer
+        uses: actions/download-artifact@v7
+        with:
+          name: keepy-windows
+          path: release
 
       - name: Create GitHub prerelease
         uses: softprops/action-gh-release@v3
         with:
           token: ${{ github.token }}
-          tag_name: v${{ steps.package.outputs.version }}-build.${{ github.run_number }}
-          name: Keepy v${{ steps.package.outputs.version }} build ${{ github.run_number }}
+          tag_name: v${{ needs.package-windows.outputs.version }}-build.${{ github.run_number }}
+          name: Keepy v${{ needs.package-windows.outputs.version }} build ${{ github.run_number }}
           target_commitish: ${{ github.sha }}
           prerelease: true
           generate_release_notes: true
