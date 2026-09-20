@@ -3,6 +3,8 @@ import type {
   ActivitySettings,
   ActivitySettingsInput,
   ActivityStatus,
+  CloseRequest,
+  CloseResolution,
   KeepyApi
 } from '../shared/types'
 
@@ -14,6 +16,12 @@ const api: KeepyApi = {
   pause: () => ipcRenderer.invoke('activity:pause'),
   showWindow: () => ipcRenderer.invoke('window:show'),
   quit: () => ipcRenderer.invoke('app:quit'),
+  resolveClose: (resolution: CloseResolution) => ipcRenderer.invoke('window:resolve-close', resolution),
+  onCloseRequest: (listener: (request: CloseRequest) => void) => {
+    const handler = (_event: Electron.IpcRendererEvent, request: CloseRequest) => listener(request)
+    ipcRenderer.on('window:close-request', handler)
+    return () => ipcRenderer.removeListener('window:close-request', handler)
+  },
   onStatus: (listener: (status: ActivityStatus) => void) => {
     const handler = (_event: Electron.IpcRendererEvent, status: ActivityStatus) => listener(status)
     ipcRenderer.on('activity:status-changed', handler)

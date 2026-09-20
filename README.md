@@ -44,7 +44,7 @@ pnpm run dist
 
 `pnpm run dist` 会先构建应用，再通过 `electron-builder` 生成 Windows x64 NSIS 安装包，产物位于 `release/`。Keepy 通过 Windows 自带的 `user32.dll` 完成鼠标操作，不需要随安装包分发或重编译原生 Node 模块。
 
-推送到 GitHub 后，Windows workflow 只会在 Pull Request 成功合并到 `master` 后运行。它会在 `windows-latest` runner 上执行类型检查、测试和打包，并将生成的 `.exe` 作为 `keepy-windows` artifact 上传。该安装包默认未签名，正式分发前应配置 Windows 代码签名证书。
+推送到 GitHub 后，Windows workflow 只会在 Pull Request 成功合并到 `master` 后运行。它会在 `windows-latest` runner 上执行类型检查、测试和打包，并将生成的 `.exe` 同时作为 `keepy-windows` artifact 上传和 GitHub prerelease 附件发布。Release tag 使用版本号和构建编号，例如 `v0.1.0-build.12`。该安装包默认未签名，正式分发前应配置 Windows 代码签名证书。
 
 ## 使用提示
 
