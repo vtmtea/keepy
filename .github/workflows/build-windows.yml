@@ -1,26 +1,26 @@
 name: Build Windows
 
 on:
-  push:
-    branches:
-      - master
-      - 'feature/**'
   pull_request:
+    types:
+      - closed
     branches:
       - master
-  workflow_dispatch:
 
 permissions:
   contents: read
 
 jobs:
   build-windows:
+    if: github.event.pull_request.merged == true
     name: Test and package Windows app
     runs-on: windows-latest
 
     steps:
-      - name: Checkout
+      - name: Checkout merged master
         uses: actions/checkout@v4
+        with:
+          ref: master
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
