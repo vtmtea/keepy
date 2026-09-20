@@ -59,7 +59,7 @@ jobs:
           "version=$($package.version)" >> $env:GITHUB_OUTPUT
 
       - name: Create GitHub prerelease
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           tag_name: v${{ steps.package.outputs.version }}-build.${{ github.run_number }}
           name: Keepy v${{ steps.package.outputs.version }} build ${{ github.run_number }}
