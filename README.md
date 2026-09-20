@@ -17,31 +17,34 @@ Keepy 是一个面向 Windows 的 Electron 托盘小工具：按固定间隔执�
 ## 开发环境
 
 - Node.js 20 或更高版本
+- pnpm 10（项目通过 `packageManager` 固定版本）
 - Windows 10/11（真实鼠标驱动和安装包验收需要 Windows）
 - Linux/WSL 可以运行类型检查、纯逻辑测试和前端构建，但不能替代 Windows 原生输入验证。
 
 安装依赖：
 
 ```bash
-npm install
+pnpm install
 ```
 
 启动开发模式：
 
 ```bash
-npm run dev
+pnpm run dev
 ```
 
 ## 检查与打包
 
 ```bash
-npm run typecheck
-npm test
-npm run build
-npm run dist
+pnpm run typecheck
+pnpm test
+pnpm run build
+pnpm run dist
 ```
 
-`npm run dist` 会先构建应用，再通过 `electron-builder` 生成 Windows x64 NSIS 安装包，产物位于 `release/`。Keepy 通过 Windows 自带的 `user32.dll` 完成鼠标操作，不需要随安装包分发或重编译原生 Node 模块。
+`pnpm run dist` 会先构建应用，再通过 `electron-builder` 生成 Windows x64 NSIS 安装包，产物位于 `release/`。Keepy 通过 Windows 自带的 `user32.dll` 完成鼠标操作，不需要随安装包分发或重编译原生 Node 模块。
+
+推送到 GitHub 后，Windows workflow 会在 `windows-latest` runner 上执行类型检查、测试和打包，并将生成的 `.exe` 作为 `keepy-windows` artifact 上传。该安装包默认未签名，正式分发前应配置 Windows 代码签名证书。
 
 ## 使用提示
 
