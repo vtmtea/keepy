@@ -1,58 +1,37 @@
 {
   "name": "keepy",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Windows tray utility that keeps the mouse active on a configurable schedule.",
-  "main": "./out/main/index.js",
   "author": "Keepy",
   "license": "MIT",
   "type": "module",
   "packageManager": "pnpm@10.12.4",
   "scripts": {
-    "dev": "electron-vite dev",
+    "dev": "vite",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
-    "build": "electron-vite build",
-    "dist": "pnpm run build && electron-builder --win --x64 --publish never"
+    "build": "vite build",
+    "tauri": "tauri",
+    "dist": "pnpm run build && tauri build --bundles nsis"
+  },
+  "dependencies": {
+    "@tauri-apps/api": "^2.8.0",
+    "react": "^19.1.1",
+    "react-dom": "^19.1.1"
   },
   "devDependencies": {
+    "@tauri-apps/cli": "^2.8.0",
+    "@testing-library/jest-dom": "^6.6.3",
+    "@testing-library/react": "^16.3.0",
+    "@testing-library/user-event": "^14.6.1",
     "@types/node": "^22.13.10",
-    "electron": "^36.3.2",
-    "electron-builder": "^26.0.12",
-    "electron-vite": "^4.0.0",
+    "@types/react": "^19.1.10",
+    "@types/react-dom": "^19.1.7",
+    "@vitejs/plugin-react": "^5.0.4",
+    "jsdom": "^26.1.0",
     "typescript": "^5.8.2",
+    "vite": "^7.1.7",
     "vitest": "^3.1.1"
-  },
-  "build": {
-    "appId": "com.keepy.desktop",
-    "productName": "Keepy",
-    "asar": true,
-    "files": [
-      "out/**/*",
-      "package.json"
-    ],
-    "directories": {
-      "output": "release",
-      "buildResources": "build"
-    },
-    "icon": "build/icon.ico",
-    "win": {
-      "target": [
-        {
-          "target": "nsis",
-          "arch": [
-            "x64"
-          ]
-        }
-      ],
-      "artifactName": "Keepy-${version}-${arch}.${ext}",
-      "signExecutable": false
-    },
-    "nsis": {
-      "oneClick": false,
-      "allowToChangeInstallationDirectory": true,
-      "perMachine": false,
-      "deleteAppDataOnUninstall": false
-    }
   }
 }

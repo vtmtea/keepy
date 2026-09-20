@@ -1,9 +1,10 @@
 node_modules/
-out/
+dist/
 release/
+src-tauri/target/
 *.log
 .DS_Store
 
-# Local Electron/Vite state
+# Local Vite/Tauri state
 .vite/
 .zcode/

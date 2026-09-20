@@ -16,9 +16,8 @@ export interface CloseResolution {
   remember: boolean
 }
 
-
 export interface ActivitySettings {
-  version: typeof SETTINGS_VERSION
+  version: number
   intervalSeconds: number
   mode: ActivityMode
   clickAcknowledged: boolean
@@ -37,23 +36,4 @@ export interface ActivityStatus {
   lastActionAt: number | null
   nextActionAt: number | null
   errorMessage: string | null
-}
-
-export interface KeepyApi {
-  getSettings: () => Promise<ActivitySettings>
-  saveSettings: (input: ActivitySettingsInput) => Promise<ActivitySettings>
-  getStatus: () => Promise<ActivityStatus>
-  start: () => Promise<ActivityStatus>
-  pause: () => Promise<ActivityStatus>
-  showWindow: () => Promise<void>
-  quit: () => Promise<void>
-  resolveClose: (resolution: CloseResolution) => Promise<void>
-  onCloseRequest: (listener: (request: CloseRequest) => void) => () => void
-  onStatus: (listener: (status: ActivityStatus) => void) => () => void
-}
-
-declare global {
-  interface Window {
-    keepy: KeepyApi
-  }
 }
