@@ -1,11 +1,12 @@
 import { app, BrowserWindow, Menu, nativeImage, Tray, ipcMain } from 'electron'
 import { join } from 'node:path'
 import { SettingsStore, settingsPath } from './settings-store'
+import { WindowStateStore, windowStatePath, type WindowState } from './window-state-store'
 import { ActivityService } from './activity-service'
 import { WindowsMouseDriver } from './windows-mouse-driver'
 import type { ScreenBounds } from './mouse-driver'
 import { createSettings } from '../shared/settings'
-import type { ActivitySettings, ActivitySettingsInput, ActivityStatus } from '../shared/types'
+import type { ActivitySettings, ActivitySettingsInput, ActivityStatus, CloseResolution } from '../shared/types'
 
 const hasSingleInstance = app.requestSingleInstanceLock()
 
@@ -18,6 +19,10 @@ if (!hasSingleInstance) {
   let activityService: ActivityService | null = null
   let settingsStore: SettingsStore | null = null
   let currentSettings: ActivitySettings | null = null
+  let windowStateStore: WindowStateStore | null = null
+  let windowState: WindowState | null = null
+  let closeApproved = false
+  let windowStateSaveTimer: ReturnType<typeof setTimeout> | null = null
 
   app.on('second-instance', () => {
     showMainWindow()
@@ -28,6 +33,8 @@ if (!hasSingleInstance) {
   app.whenReady().then(async () => {
     settingsStore = new SettingsStore(settingsPath(app.getPath('userData')))
     currentSettings = await settingsStore.load()
+    windowStateStore = new WindowStateStore(windowStatePath(app.getPath('userData')))
+    windowState = await windowStateStore.load()
     activityService = new ActivityService(
       {
         mouse: mouseDriver,
@@ -68,9 +75,16 @@ if (!hasSingleInstance) {
   }
 
   function createMainWindow(): void {
-    mainWindow = new BrowserWindow({
+    const savedState = windowState ?? {
       width: 780,
       height: 650,
+      closeAction: 'tray' as const,
+      promptOnClose: true
+    }
+
+    mainWindow = new BrowserWindow({
+      width: savedState.width,
+      height: savedState.height,
       minWidth: 620,
       minHeight: 560,
       show: false,
@@ -84,16 +98,68 @@ if (!hasSingleInstance) {
       }
     })
 
+    mainWindow.on('resize', scheduleWindowStateSave)
+    mainWindow.on('move', scheduleWindowStateSave)
+
     mainWindow.on('close', (event) => {
-      if (!isQuitting) {
-        event.preventDefault()
-        mainWindow?.hide()
+      saveWindowState()
+      if (isQuitting || closeApproved) {
+        return
       }
+
+      event.preventDefault()
+      requestCloseConfirmation()
     })
 
     mainWindow.on('closed', () => {
       mainWindow = null
     })
+  }
+
+  function requestCloseConfirmation(): void {
+    if (!mainWindow || mainWindow.isDestroyed()) {
+      return
+    }
+
+    const state = windowStateStore?.get() ?? windowState
+    if (!state || !state.promptOnClose) {
+      applyCloseAction(state?.closeAction ?? 'tray')
+      return
+    }
+
+    mainWindow.webContents.send('window:close-request', {
+      defaultAction: state.closeAction,
+      promptOnClose: state.promptOnClose
+    })
+  }
+
+  function applyCloseAction(action: 'quit' | 'tray'): void {
+    if (action === 'quit') {
+      closeApproved = true
+      isQuitting = true
+      app.quit()
+      return
+    }
+    mainWindow?.hide()
+  }
+
+  function scheduleWindowStateSave(): void {
+    if (windowStateSaveTimer !== null) {
+      clearTimeout(windowStateSaveTimer)
+    }
+    windowStateSaveTimer = setTimeout(() => {
+      saveWindowState()
+      windowStateSaveTimer = null
+    }, 250)
+  }
+
+  function saveWindowState(): void {
+    if (!mainWindow || mainWindow.isDestroyed() || !windowStateStore) {
+      return
+    }
+
+    const [width, height] = mainWindow.getSize()
+    windowState = windowStateStore.saveSync({ width, height })
   }
 
   function createTray(): void {
@@ -138,8 +204,24 @@ if (!hasSingleInstance) {
       showMainWindow()
     })
 
+    ipcMain.handle('window:resolve-close', (_event, resolution: CloseResolution) => {
+      if (resolution.action !== 'quit' && resolution.action !== 'tray') {
+        throw new Error('关闭操作无效。')
+      }
+
+      if (resolution.remember && windowStateStore) {
+        windowState = windowStateStore.saveSync({
+          closeAction: resolution.action,
+          promptOnClose: false
+        })
+      }
+
+      applyCloseAction(resolution.action)
+    })
+
     ipcMain.handle('app:quit', () => {
       isQuitting = true
+      closeApproved = true
       app.quit()
     })
   }

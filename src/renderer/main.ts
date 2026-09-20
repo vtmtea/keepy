@@ -1,4 +1,10 @@
-import type { ActivitySettings, ActivitySettingsInput, ActivityStatus } from '../shared/types'
+import type {
+  ActivitySettings,
+  ActivitySettingsInput,
+  ActivityStatus,
+  CloseAction,
+  CloseRequest
+} from '../shared/types'
 import { MAX_INTERVAL_SECONDS, MIN_INTERVAL_SECONDS } from '../shared/types'
 import './styles.css'
 
@@ -17,8 +23,14 @@ const nextAction = document.querySelector<HTMLElement>('#next-action')!
 const errorBox = document.querySelector<HTMLElement>('#error-box')!
 const formMessage = document.querySelector<HTMLElement>('#form-message')!
 const saveState = document.querySelector<HTMLElement>('#save-state')!
+const closeDialog = document.querySelector<HTMLDialogElement>('#close-dialog')!
+const closeForm = document.querySelector<HTMLFormElement>('#close-form')!
+const closeActionInputs = Array.from(document.querySelectorAll<HTMLInputElement>('input[name="close-action"]'))
+const rememberClose = document.querySelector<HTMLInputElement>('#remember-close')!
+const cancelClose = document.querySelector<HTMLButtonElement>('#cancel-close')!
 
 let currentStatus: ActivityStatus | null = null
+let pendingCloseRequest: CloseRequest | null = null
 
 void initialize()
 
@@ -28,6 +40,7 @@ async function initialize(): Promise<void> {
     renderSettings(settings)
     renderStatus(status)
     window.keepy.onStatus(renderStatus)
+    window.keepy.onCloseRequest(openCloseDialog)
   } catch (error) {
     showFormMessage(errorMessage(error), true)
   }
@@ -51,12 +64,47 @@ for (const input of modeInputs) {
 
 intervalInput.addEventListener('input', markSettingsDirty)
 
+cancelClose.addEventListener('click', () => {
+  closeDialog.close()
+  pendingCloseRequest = null
+})
+
+closeForm.addEventListener('submit', (event) => {
+  event.preventDefault()
+  void resolveCloseDialog()
+})
+
 clickAcknowledged.addEventListener('change', () => {
   markSettingsDirty()
   if (!clickAcknowledged.checked && selectedMode() === 'click') {
     showFormMessage('开始点击模式前需要保留此确认。', false)
   }
 })
+
+function openCloseDialog(request: CloseRequest): void {
+  pendingCloseRequest = request
+  for (const input of closeActionInputs) {
+    input.checked = input.value === request.defaultAction
+  }
+  rememberClose.checked = false
+  if (!closeDialog.open) {
+    closeDialog.showModal()
+  }
+}
+
+async function resolveCloseDialog(): Promise<void> {
+  if (!pendingCloseRequest) {
+    closeDialog.close()
+    return
+  }
+
+  const selected = closeActionInputs.find((input) => input.checked)?.value
+  const action: CloseAction = selected === 'quit' ? 'quit' : 'tray'
+  const remember = rememberClose.checked
+  closeDialog.close()
+  pendingCloseRequest = null
+  await window.keepy.resolveClose({ action, remember })
+}
 
 async function saveSettings(): Promise<ActivitySettings | null> {
   const settings = readSettingsForm()

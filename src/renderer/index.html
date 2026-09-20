@@ -98,6 +98,39 @@
         关闭窗口不会退出应用，Keepy 会继续在系统托盘中运行。
       </footer>
     </main>
+
+    <dialog id="close-dialog" class="close-dialog" aria-labelledby="close-dialog-title">
+      <form method="dialog" id="close-form">
+        <p class="section-label">窗口操作</p>
+        <h2 id="close-dialog-title">确认关闭</h2>
+        <p class="dialog-copy">请选择关闭窗口后的处理方式。</p>
+        <fieldset class="close-options">
+          <label class="close-option">
+            <input type="radio" name="close-action" value="tray" />
+            <span>
+              <strong>最小化到托盘</strong>
+              <small>Keepy 继续运行，可从托盘重新打开。</small>
+            </span>
+          </label>
+          <label class="close-option">
+            <input type="radio" name="close-action" value="quit" />
+            <span>
+              <strong>直接关闭</strong>
+              <small>停止 Keepy 并退出应用。</small>
+            </span>
+          </label>
+        </fieldset>
+        <label class="remember-close">
+          <input id="remember-close" type="checkbox" />
+          <span>下次不再提示</span>
+        </label>
+        <div class="dialog-actions">
+          <button id="cancel-close" class="secondary-button" type="button">取消</button>
+          <button class="primary-button" value="confirm" type="submit">确认</button>
+        </div>
+      </form>
+    </dialog>
+
     <script type="module" src="./main.ts"></script>
   </body>
 </html>

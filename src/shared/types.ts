@@ -4,6 +4,18 @@ export const MAX_INTERVAL_SECONDS = 3600
 
 export type ActivityMode = 'move' | 'click'
 export type ActivityPhase = 'paused' | 'running' | 'error'
+export type CloseAction = 'quit' | 'tray'
+
+export interface CloseRequest {
+  defaultAction: CloseAction
+  promptOnClose: boolean
+}
+
+export interface CloseResolution {
+  action: CloseAction
+  remember: boolean
+}
+
 
 export interface ActivitySettings {
   version: typeof SETTINGS_VERSION
@@ -35,6 +47,8 @@ export interface KeepyApi {
   pause: () => Promise<ActivityStatus>
   showWindow: () => Promise<void>
   quit: () => Promise<void>
+  resolveClose: (resolution: CloseResolution) => Promise<void>
+  onCloseRequest: (listener: (request: CloseRequest) => void) => () => void
   onStatus: (listener: (status: ActivityStatus) => void) => () => void
 }
 
