@@ -1,0 +1,32 @@
+[package]
+name = "keepy"
+version = "0.2.0"
+description = "Windows tray utility that keeps the mouse active on a configurable schedule."
+authors = ["Keepy"]
+edition = "2021"
+license = "MIT"
+rust-version = "1.77"
+
+[lib]
+name = "keepy_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2.4", features = [] }
+
+[dependencies]
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+tauri = { version = "2.8", features = ["tray-icon", "image-png"] }
+tauri-plugin-single-instance = "2.3"
+tokio = { version = "1", features = ["sync", "time"] }
+
+[target.'cfg(windows)'.dependencies]
+windows = { version = "0.61", features = ["Win32_Foundation", "Win32_Graphics_Gdi", "Win32_UI_Input_KeyboardAndMouse", "Win32_UI_WindowsAndMessaging"] }
+
+[profile.release]
+codegen-units = 1
+lto = true
+opt-level = "s"
+panic = "abort"
+strip = true
