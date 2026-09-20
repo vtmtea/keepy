@@ -61,6 +61,7 @@ jobs:
       - name: Create GitHub prerelease
         uses: softprops/action-gh-release@v3
         with:
+          token: ${{ github.token }}
           tag_name: v${{ steps.package.outputs.version }}-build.${{ github.run_number }}
           name: Keepy v${{ steps.package.outputs.version }} build ${{ github.run_number }}
           target_commitish: ${{ github.sha }}
